@@ -100,6 +100,7 @@ data TypeError
   | TypeIsNotAnExpression SourceInfo Name
   | InvalidTypeInStructInitializer SourceInfo Type
   | StructInitializerFieldCountMismatch SourceInfo Type [Type]
+  | NoSuchFieldInStruct SourceInfo Name Name Type
   deriving (Show, Eq)
 
 -------------------------------------------------------------------------------
@@ -179,6 +180,10 @@ lookupValue :: SourceInfo -> Identifier -> Infer Type
 lookupValue si (Qualified pkg name) = do
   env <- ask
   case Environment.lookup pkg env of
+      Just (Local _ _ (Forall _ _ t)) ->
+        case getFieldInType (underlying t) name of
+          Just fieldType -> return fieldType
+          _              -> throwError $ NoSuchFieldInStruct si pkg name t
       Just (Package _ _ env') ->
         lookupValueIn env' si name `catchError` onError
         where
@@ -186,6 +191,15 @@ lookupValue si (Qualified pkg name) = do
         onError NotInScope{} = throwError $ MemberNotInPackage si pkg name
         onError e = throwError e
       _              -> throwError $ PackageNotInScope si pkg
+  where
+  getFieldInType (TStruct _ fields) fieldName =
+    foldl iter Nothing fields
+    where
+    iter (Just fieldType) _ = Just fieldType
+    iter Nothing (TStructField _ n fieldType)
+      | n == fieldName = Just fieldType
+      | otherwise      = Nothing
+  getFieldInType _ _ = Nothing
 lookupValue si (Unqualified name) = do
   env <- ask
   lookupValueIn env si name

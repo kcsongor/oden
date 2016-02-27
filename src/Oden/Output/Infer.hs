@@ -25,6 +25,7 @@ instance OdenOutput TypeError where
   name (TypeIsNotAnExpression _ _)                          = "Infer.TypeIsNotAnExpression"
   name (InvalidTypeInStructInitializer _ _)                 = "Infer.InvalidTypeInStructInitializer"
   name (StructInitializerFieldCountMismatch _ _ _)          = "Infer.StructInitializerFieldCountMismatch"
+  name (NoSuchFieldInStruct _ _ _ _)                        = "Infer.NoSuchFieldInStruct"
 
   header (UnificationFail _ t1 t2) s = text "Cannot unify types"
     <+> code s (pp t1) <+> text "and" <+> code s (pp t2)
@@ -51,6 +52,10 @@ instance OdenOutput TypeError where
     text "Type" <+> code s (pp t) <+> text "cannot be initialized as a struct"
   header (StructInitializerFieldCountMismatch _ _ _) _ =
     text "Struct is initialized with too many values"
+  header (NoSuchFieldInStruct _ valueName fieldName structType) s =
+    text "Value " <+> strCode s valueName
+    <+> text "with type" <+> code s (pp structType)
+    <+> text "has no field" <+> strCode s fieldName
 
   details (UnificationFail _ _ _) _ = empty
   details (InfiniteType _ v t) s = code s (pp v) <+> equals <+> code s (pp t)
@@ -75,6 +80,7 @@ instance OdenOutput TypeError where
   details (StructInitializerFieldCountMismatch _ structType types) s =
     text "Struct:" <+> (code s (pp structType))
     $+$ text "Initialized with:" <+> vcat (map (code s . pp) types)
+  details NoSuchFieldInStruct{} _ = empty
 
   sourceInfo (ArgumentCountMismatch e _ _)                               = Just (getSourceInfo e)
   sourceInfo (UnificationFail si _ _)                                    = Just si
@@ -89,3 +95,4 @@ instance OdenOutput TypeError where
   sourceInfo (TypeIsNotAnExpression si _)                                = Just si
   sourceInfo (InvalidTypeInStructInitializer si _)                       = Just si
   sourceInfo (StructInitializerFieldCountMismatch si _ _)                = Just si
+  sourceInfo (NoSuchFieldInStruct si _ _ _)                              = Just si
