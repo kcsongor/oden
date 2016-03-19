@@ -27,12 +27,12 @@ install:
 - cabal install --enable-tests --only-dependencies
 script:
 - cabal configure --enable-tests
-- make ci-test
 - export VERSION=branch-$TRAVIS_BRANCH-job-$TRAVIS_JOB_NUMBER
 - if [[ "$TRAVIS_PULL_REQUEST" != "false" ]]; then export VERSION=pull-request-$TRAVIS_PULL_REQUEST-job-$TRAVIS_JOB_NUMBER;
   fi
 - if [[ "$TRAVIS_TAG" != "" ]]; then export VERSION=$TRAVIS_TAG; fi
 - make dist
+- make ci-test
 cache:
   apt: true
   directories:
